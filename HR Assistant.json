@@ -1,0 +1,393 @@
+{
+  "name": "HR Assistant",
+  "nodes": [
+    {
+      "parameters": {
+        "pollTimes": {
+          "item": [
+            {
+              "mode": "everyMinute"
+            }
+          ]
+        },
+        "documentId": {
+          "__rl": true,
+          "value": "13SG8WMcN6DdaA24RZ-JTzMCSmtnVTPr7WcPoOFp5idE",
+          "mode": "list",
+          "cachedResultName": "AI HR screening",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/13SG8WMcN6DdaA24RZ-JTzMCSmtnVTPr7WcPoOFp5idE/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 915055586,
+          "mode": "list",
+          "cachedResultName": "Form responses 1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/13SG8WMcN6DdaA24RZ-JTzMCSmtnVTPr7WcPoOFp5idE/edit#gid=915055586"
+        },
+        "event": "rowAdded",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheetsTrigger",
+      "typeVersion": 1,
+      "position": [
+        -496,
+        -224
+      ],
+      "id": "50287e0c-a685-402d-8db6-0b5146cd9a0c",
+      "name": "Google Sheets Trigger",
+      "credentials": {
+        "googleSheetsTriggerOAuth2Api": {
+          "id": "sPlAFzmbauGFZuJ5",
+          "name": "Google Sheets Trigger account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "17f9908e-203e-4923-9a60-2b3862ba7a10",
+              "name": "Full Name ",
+              "value": "={{ $json['Full Name '] }}",
+              "type": "string"
+            },
+            {
+              "id": "1977a343-9278-4b9f-9739-29705827cdb3",
+              "name": "  Email  ",
+              "value": "={{ $json['  Email  '] }}",
+              "type": "string"
+            },
+            {
+              "id": "839ec92f-34ae-4b75-bfbe-3aa717145fc5",
+              "name": "  Phone Number  ",
+              "value": "={{ $json['  Phone Number  '] }}",
+              "type": "string"
+            },
+            {
+              "id": "223c980c-311a-4c89-9321-c0235bff4421",
+              "name": "Position Applying For",
+              "value": "={{ $json['Position Applying For'] }}",
+              "type": "string"
+            },
+            {
+              "id": "caec9090-1280-473a-ac52-4f25be0599e0",
+              "name": "  Years of Experience  ",
+              "value": "={{ $json['  Years of Experience  '] }}",
+              "type": "number"
+            },
+            {
+              "id": "1dc9ad6d-5bb8-479b-b9ff-01b6e29c70d6",
+              "name": "  Skills  ",
+              "value": "={{ $json['  Skills  '] }}",
+              "type": "string"
+            },
+            {
+              "id": "1bb2f59c-e658-4200-9494-8908d5ecabe8",
+              "name": "  Resume (PDF)  ",
+              "value": "={{ $json['  Resume (PDF)  '] }}",
+              "type": "string"
+            },
+            {
+              "id": "a554e639-e3e5-476e-b72a-86953d7cab21",
+              "name": "ResumeID",
+              "value": "={{ Object.values($json).find(v => typeof v === 'string' && v.includes('drive.google.com/open?id='))?.split('id=')[1] }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.5,
+      "position": [
+        -256,
+        -288
+      ],
+      "id": "5e9fa444-5f18-4a09-92ed-148d6db5656c",
+      "name": "Edit Fields"
+    },
+    {
+      "parameters": {
+        "operation": "download",
+        "fileId": {
+          "__rl": true,
+          "value": "={{ $json.ResumeID }}",
+          "mode": "id"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        -112,
+        -144
+      ],
+      "id": "adefd922-9352-4354-8b35-db389b7cc4f2",
+      "name": "Download file",
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "ufFZMDlL0cnOdHxB",
+          "name": "Google Drive account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "pdf",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.extractFromFile",
+      "typeVersion": 1.1,
+      "position": [
+        128,
+        -256
+      ],
+      "id": "36926a94-ebf7-4148-bb2c-39a982cbc20e",
+      "name": "Extract from File"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=You are an HR resume screening assistant.\n\nAnalyze the following resume.\n\nExtract:\n- Candidate name\n- Email\n- Phone\n- Education\n- Skills\n- Experience\n- Projects\n\nThen compare the candidate with this job:\n\nPosition: Python Developer\n\nRequired skills:\n- Python\n- FastAPI\n- SQL\n- REST API\n- Git\n- Docker\n\nGive:\n1. Matching skills\n2. Missing skills\n3. Experience match\n4. Score from 0 to 100\n5. Recommendation: Shortlist or Reject\n\nResume:\n{{ $json.text }}\nReturn the result as JSON.",
+        "options": {
+          "systemMessage": "You are a helpful assistant\noutput format:\n{\n  \"candidate_name\": \"Ali Khan\",\n  \"email\": \"ali@gmail.com\",\n  \"score\": 87,\n  \"matching_skills\": [\n    \"Python\",\n    \"FastAPI\",\n    \"SQL\",\n    \"Git\"\n  ],\n  \"missing_skills\": [\n    \"Docker\"\n  ],\n  \"recommendation\": \"Shortlist\"\n}"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        384,
+        -256
+      ],
+      "id": "ca00045b-c606-42dc-a869-6a3532b9c89d",
+      "name": "AI Agent"
+    },
+    {
+      "parameters": {
+        "model": "openai/gpt-3.5-turbo",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenRouter",
+      "typeVersion": 1,
+      "position": [
+        384,
+        16
+      ],
+      "id": "135ca32f-3f0e-498a-bdb5-e70aa78fdae9",
+      "name": "OpenRouter Chat Model",
+      "credentials": {
+        "openRouterApi": {
+          "id": "VHu88S8wwwNM9gsR",
+          "name": "OpenRouter account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Loop over input items and add a new field called 'myNewField' to the JSON of each one\nreturn items.map(item => {\n  const output = item.json.output;\n\n  const cleaned = output\n    .replace(/```json/g, '')\n    .replace(/```/g, '')\n    .trim();\n\n  const data = JSON.parse(cleaned);\n\n  return {\n    json: data\n  };\n});"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        784,
+        -176
+      ],
+      "id": "c9d70716-7839-4676-8e2c-7f5216d9d257",
+      "name": "Code in JavaScript"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "9717caa8-5c23-4919-b17f-84656f57877c",
+              "leftValue": "={{ $json.score }}",
+              "rightValue": 79,
+              "operator": {
+                "type": "number",
+                "operation": "gt"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        976,
+        -144
+      ],
+      "id": "9ed4d3ef-75c4-489b-bd27-b870675d1bf3",
+      "name": "If"
+    },
+    {
+      "parameters": {
+        "sendTo": "={{ $json.email }}",
+        "subject": "Congratulations — You Have Been Shortlisted",
+        "emailType": "text",
+        "message": "=Hello {{ $json.candidate_name }},  Congratulations!  Your application has been shortlisted for the next stage of our hiring process.  Your resume screening score was {{ $json.score }}/100.  Our HR team will contact you with the next steps.  Best regards, HR Team",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        1184,
+        -240
+      ],
+      "id": "bb26b488-1df1-42e7-bbd7-38b39da7e365",
+      "name": "Send a message",
+      "webhookId": "e8420c28-0d8c-4e03-92a8-f727bbac540c",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "W0nSCY5GkoXUTcL0",
+          "name": "Gmail account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sendTo": "={{ $json.email }}",
+        "subject": "Application Update",
+        "emailType": "text",
+        "message": "=Hello {{ $json.candidate_name }},  Thank you for applying for the position.  After reviewing your application, we are unable to move forward with your application at this time.  We appreciate your time and interest in our company.  Best regards, HR Team",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        1184,
+        -80
+      ],
+      "id": "7c09a68e-7417-4906-a844-ea2c0c6c0d1a",
+      "name": "Send a message1",
+      "webhookId": "5405ea77-460b-4960-b9f3-31ba7e416ff3",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "W0nSCY5GkoXUTcL0",
+          "name": "Gmail account 2"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Google Sheets Trigger": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields": {
+      "main": [
+        [
+          {
+            "node": "Download file",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Download file": {
+      "main": [
+        [
+          {
+            "node": "Extract from File",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract from File": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenRouter Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript": {
+      "main": [
+        [
+          {
+            "node": "If",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If": {
+      "main": [
+        [
+          {
+            "node": "Send a message",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Send a message1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false
+  },
+  "versionId": "1492c831-3fb5-4ceb-8f44-05fd1446184f",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "cb8732dd38c15f02b434ce06d7c70e35095428b203536aea75c9a3766cc611c2"
+  },
+  "nodeGroups": [],
+  "id": "yCTsjxxgAMMUsVAn",
+  "tags": []
+}
